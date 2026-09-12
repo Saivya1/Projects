@@ -24,7 +24,7 @@ class GUI(customtkinter.CTk):
         self.display_frame.grid_columnconfigure(0, weight=1)
         self.display = customtkinter.CTkLabel(
             master=self.display_frame,
-            text="test display",
+            text="",
             width=200,
             height=100,
             anchor="e",
@@ -41,6 +41,7 @@ class GUI(customtkinter.CTk):
             ["1", "2", "3", "-"],
             ["0", ".", "=", "+"],
         ]
+
         for i in range(4):
             for j in range(4):
                 button = customtkinter.CTkButton(
@@ -52,8 +53,79 @@ class GUI(customtkinter.CTk):
 
                 button.grid(row=i, column=j, sticky="nsew", padx=5, pady=5)
 
-    def button_callbck(self, action):
+    def button_callbck(self, action: str) -> None:
         print(f"button clicked : {action}")
+
+        curr_str = self.display.cget("text")
+
+        # Invalid expression error
+        if curr_str and curr_str[-1] in "-=+/*." and action in "-=+/*.":
+            print(f"curr str : {curr_str}")
+            self.display.configure(text="Invalid expression, try again")
+            self.after(3000, lambda: self.display.configure(text=""))
+            return
+
+        curr_str += action
+
+        if action == "=":
+            curr_str = curr_str[:-1]
+            res = self.calculate_res(curr_str)
+            self.display.configure(text=f"{res}")
+        else:
+            self.display.configure(text=f"{curr_str}")
+
+    def calculate_res(self, curr_str: str) -> float:
+        # 123.23 + 32
+        # 12+34
+        operations = []
+        nums = []
+        num = ""
+
+        for i in range(len(curr_str)):
+            if curr_str[i].isdigit() or curr_str[i] == ".":
+                num += curr_str[i]
+            else:
+                nums.append(float(num))
+                num = ""
+                operations.append(curr_str[i])
+        nums.append(float(num))
+
+        i = 0
+        while i < len(operations):
+            if operations[i] == "*":
+                res = nums[i] * nums[i + 1]
+                nums[i] = res
+                nums.pop(i + 1)
+                operations.pop(i)
+            elif operations[i] == "/":
+                res = nums[i] / nums[i + 1]
+                nums[i] = res
+                nums.pop(i + 1)
+                operations.pop(i)
+            else:
+                i += 1
+
+        # Handle + and -
+        result = nums[0]
+
+        for i in range(len(operations)):
+            if operations[i] == "+":
+                result += nums[i + 1]
+
+            elif operations[i] == "-":
+                result -= nums[i + 1]
+
+        return result
+        # try:
+        #     # eval() naturally follows standard mathematical operator precedence
+        #     # Restricting globals/locals for basic safety
+        #     result = eval(curr_str, {"__builtins__": {}}, {})
+        #     print(f"Result: {result}\n")
+        #     return result
+        # except ZeroDivisionError:
+        #     print("Error: Division by zero is not allowed.\n")
+        # except Exception as e:
+        #     print(f"Invalid expression. Please try again. (Error: {e})\n")
 
 
 app = GUI()
